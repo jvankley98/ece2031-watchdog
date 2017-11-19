@@ -75,6 +75,721 @@ Main:
 	; code in that ISR will attempt to control the robot.
 	; If you want to take manual control of the robot,
 	; execute CLI &B0010 to disable the timer interrupt.
+	JUMP	InitialPatrol
+	
+	
+	;function to perform sonar reading using front four sensors
+;assumes that the robot is facing the correct direction
+;it will store the value in an array 
+ReadStoreValsA:
+	LOAD  mask1        ;load the mask for sensor 1
+	OR    mask2		  ;or the masks tgether to enable multiple sonars
+	OR 	  mask3		  ;or the masks tgether to enable multiple sonars
+	OR    mask4	 	  ;or the masks tgether to enable multiple sonars
+	OUT   SONAREN 	  ;enable the sonar sensors
+	
+	CALL  Wait1Half
+;	LOAD  Zero 		  ;Load zero into AC
+;	STORE Temp 		  ;make sure temp is zero to start off
+	
+	IN    Dist1        ;get the reading from sonar 1
+	ADDI  -304			;subtract one foot from this measurement to use in checking for object later 
+	STORE AStore0       ;store the first sensor reading in AStore0
+	
+	IN    Dist2        ;get the reading from sonar 2
+	ADDI  -304			;subtract one foot from this measurement to use in checking for object later 
+	STORE AStore1     ;store the first sensor reading in AStore1
+	
+	IN    Dist3        ;get the reading from sonar 3
+	ADDI  -304			;subtract one foot from this measurement to use in checking for object later 
+	STORE AStore2       ;store the first sensor reading in Astore2
+	
+	IN    Dist4        ;get the reading from sonar 4
+	ADDI  -304			;subtract one foot from this measurement to use in checking for object later 
+	STORE AStore3       ;store the first sensor reading in AStore3
+	
+	LOAD  Zero        ;load Zero into the AC
+	OUT   SONAREN     ;turn off sonar
+	
+	RETURN            ;return to caller 
+	
+	
+	
+;function to perform sonar reading using front four sensors
+;assumes that the robot is facing the correct direction
+;it will store the value in an array 
+ReadStoreValsB:
+	LOAD  mask1        ;load the mask for sensor 1
+	OR    mask2		  ;or the masks tgether to enable multiple sonars
+	OR 	  mask3		  ;or the masks tgether to enable multiple sonars
+	OR    mask4	 	  ;or the masks tgether to enable multiple sonars
+	OUT   SONAREN 	  ;enable the sonar sensors
+	
+	CALL  Wait1Half
+;	LOAD  Zero 		  ;Load zero into AC
+;	STORE Temp 		  ;make sure temp is zero to start off
+	
+	IN    Dist1        ;get the reading from sonar 1
+	ADDI  -304			;subtract one foot from this measurement to use in checking for object later   
+	STORE BStore0       ;store the first sensor reading in AStore0
+	
+	IN    Dist2        ;get the reading from sonar 2
+	ADDI  -304			;subtract one foot from this measurement to use in checking for object later
+	STORE BStore1     ;store the first sensor reading in BStore1
+	
+	IN    Dist3        ;get the reading from sonar 3
+	ADDI  -304			;subtract one foot from this measurement to use in checking for object later
+	STORE BStore2       ;store the first sensor reading in BStore2
+	
+	IN    Dist4        ;get the reading from sonar 4
+	ADDI  -304			;subtract one foot from this measurement to use in checking for object later
+	STORE BStore3       ;store the first sensor reading in BStore3
+	
+	LOAD  Zero        ;load Zero into the AC
+	OUT   SONAREN     ;turn off sonar
+	
+	RETURN            ;return to caller  
+	 
+	
+
+;function to fire the front four sonars and detect if something has changed
+;assumes the robot is facing the correct direction
+;it will beep if something is detected whithin a threshold of 1 foot
+ReadCompareValsA:
+	LOAD  mask1        ;load the mask for sensor 1
+	OR    mask2		  ;or the masks tgether to enable multiple sonars
+	OR 	  mask3		  ;or the masks tgether to enable multiple sonars
+	OR    mask4	 	  ;or the masks tgether to enable multiple sonars
+	OUT   SONAREN 	  ;enable the sonar sensors
+	
+	CALL  Wait1Half   ;tell robot to wait in order to give sonar time to setup
+	
+	LOADI 1
+	OUT   LCD
+	IN    Dist1       ;get the value from sonar sensor 1
+	SUB   AStore0     ;subtract the previous value from new value 
+	JNEG  FOUNDA       ;if the distance is too close the intruder is there
+	
+	LOADI 2
+	OUT   LCD
+	IN    Dist2       ;get the value from sonar sensor 2
+	SUB   AStore1     ;subtract the previous value from new value 
+	JNEG  FOUNDA       ;if the distance is too close the intruder is there
+	
+	LOADI 3
+	OUT   LCD
+	IN    Dist3       ;get the value from sonar sensor 3
+	SUB   AStore0     ;subtract the previous value from new value 
+	JNEG  FOUNDA       ;if the distance is too close the intruder is there
+	
+	LOADI 4
+	OUT   LCD
+	IN    Dist4       ;get the value from sonar sensor 4
+	SUB   AStore0     ;subtract the previous value from new value 
+	JNEG  FOUNDA       ;if the distance is too close the intruder is there
+	LOAD  Zero        ;load Zero into the AC
+	OUT   SONAREN     ;turn off sonar
+	RETURN            ;if not found return to caller
+	
+FOUNDA:
+    CALL  FoundIntruder ;if there is something there then beep!
+    LOAD  Zero        ;load Zero into the AC
+	OUT   SONAREN     ;turn off sonar
+    RETURN             ;return to caller
+    
+    
+    
+;function to fire the front four sonars and detect if something has changed
+;assumes the robot is facing the correct direction
+;it will beep if something is detected whithin a threshold of 1 foot
+ReadCompareValsB:
+	LOAD  mask1        ;load the mask for sensor 1
+	OR    mask2		  ;or the masks tgether to enable multiple sonars
+	OR 	  mask3		  ;or the masks tgether to enable multiple sonars
+	OR    mask4	 	  ;or the masks tgether to enable multiple sonars
+	OUT   SONAREN 	  ;enable the sonar sensors
+	
+	CALL  Wait1Half   ;tell robot to wait in order to give sonar time to setup
+	
+	IN    Dist1       ;get the value from sonar sensor 1
+	SUB   BStore0     ;subtract the previous value from new value 
+	JNEG  FOUNDB       ;if the distance is too close the intruder is there
+	
+	IN    Dist2       ;get the value from sonar sensor 2
+	SUB   BStore1     ;subtract the previous value from new value 
+	JNEG  FOUNDB       ;if the distance is too close the intruder is there
+	
+	IN    Dist3       ;get the value from sonar sensor 3
+	SUB   BStore0     ;subtract the previous value from new value 
+	JNEG  FOUNDB      ;if the distance is too close the intruder is there
+	
+	IN    Dist4       ;get the value from sonar sensor 4
+	SUB   BStore0     ;subtract the previous value from new value 
+	JNEG  FOUNDB      ;if the distance is too close the intruder is there
+	LOAD  Zero        ;load Zero into the AC
+	OUT   SONAREN     ;turn off sonar
+	RETURN            ;if not found return to caller
+	
+	
+FOUNDB:
+    CALL  FoundIntruder ;if there is something there then beep!
+    LOAD  Zero        ;load Zero into the AC
+	OUT   SONAREN     ;turn off sonar
+    RETURN             ;return to caller
+	
+	
+	
+	
+;function to sound a beep when an intruder is located in the area
+FoundIntruder:
+	LOADI &H40        ;load in the frequency to make it beep
+	OUT   BEEP 		  ;tell the robot to beep
+	CALL  Wait1       ;tell robot to wait one second in order to let it beep
+	LOADI &H00	      ;Load in new value to make beep stop
+	OUT   BEEP        ;tell beep to stop 
+	RETURN            ;return to caller
+	
+
+
+;Code which instructs the robot to move from a designated starting position
+;To a known point on a five point patrol path
+InitialPatrol:
+	LOAD   FMid        ; Defined below as 350.
+	STORE  DVel        ; Desired forward velocity
+	IN     XPOS        ; X position from odometry
+	OUT    LCD         ; Display X position for debugging
+	;Subtracts one meter so the value in the accumulator is a negative value
+	;until the robot has moved one meter
+	SUB    OneMeter    ; Defined below as the robot units for 1 m
+	;junps to the begining of this loop so that the robot will continue to move forward
+	;until it has moved aproximatly one meter
+	JNEG   InitialPatrol   ; Not there yet, keep checking
+	LOADI  0		   ; Loads 0
+	STORE  DVel        ; Stops the robot from moving forward
+	OUT    LVELCMD	   ; extra stop comands to ensure the robot is stationary
+	OUT	   RVELCMD     ; extra stop comands to ensure the robot is stationary
+	CALL   Wait1 	   ; the robot waits one second so any function calls can be completed
+	
+	;area where function calls can be made so the robot does something specific
+	;
+	;area where function calls can be made so the robot does something specific
+	
+;Code which instructs the robot to move from 'Point A' on the patrol path to 'Point B'
+PointA:
+	LOAD   FMid        ; Defined below as 350.
+	STORE  DVel        ; Desired forward velocity
+	IN     XPOS        ; X position from odometry
+	OUT    LCD         ; Display X position for debugging
+	;Subtracts 'distanceA' so the value in the accumulator is a negative value
+	;until the robot has moved 'distanceA'
+	SUB    DistanceA   ; Defined below as the robot units for aproximatly 2.5 m
+	;junps to the begining of this loop so that the robot will continue to move forward
+	;until it has moved aproximatly one meter
+	JNEG   PointA      ; Not there yet, keep checking
+	LOADI  0		   ; Loads 0
+	STORE  DVel        ; Stops the robot from moving forward
+	OUT    LVELCMD     ; extra stop comands to ensure the robot is stationary
+	OUT	   RVELCMD     ; extra stop comands to ensure the robot is stationary
+	LOADI  270         ; Loads 270, the angled needed to turn right
+	STORE  DManTheta   ; Makes the robot turn the angle specified
+	LOAD   FSlow 	   ; Specifies a slow trun speed
+	STORE  DManTurnVel ; stores the turn speed
+	CALL   TurnVariableSpeed ; Calls the turn API constructed for variable speed turns
+	CALL   Wait1      ; Calls Wait1 to wait 1 second to let the robot turn
+	
+	;area where function calls can be made so the robot does something specific
+	;
+	;area where function calls can be made so the robot does something specific
+	
+;Code which instructs the robot to move from 'Point B' on the patrol path to 'Point C'
+PointB:
+	LOAD   FMid        ; Defined below as 350.
+	STORE  DVel        ; Desired forward velocity
+	IN     YPOS        ; X position from odometry
+	OUT    LCD         ; Display X position for debugging
+	;Adds 'distanceA' so the value in the accumulator is a positive value
+	;until the robot has moved Two meters
+	ADD    TwoMeters   ; Defined below as the robot units for 2 m
+	;junps to the begining of this loop so that the robot will continue to move forward
+	;until it has moved aproximatly one meter
+	JPOS   PointB      ; Not there yet, keep checking
+	JUMP   MiniaturePatrol	;Jumps to the patrol code to regulate the rest of the robot's motion
+
+	
+;Code which has the robot do along ints permanant patrol path
+MiniaturePatrol:
+	LOADI  0			; Loads 0
+	STORE  DVel 		; Stops the robot from moving forward
+	OUT    LVELCMD		; extra stop comands to ensure the robot is stationary
+	OUT	   RVELCMD 		; extra stop comands to ensure the robot is stationary
+	OUT	   RESETPOS		; resets the odometry at this point to 
+	CALL	Wait1		; Calls Wait1 to wait 1 second to let the robot turn
+	
+	;area where function calls can be made so the robot does something specific
+	;
+	;area where function calls can be made so the robot does something specific
+	
+;Code which regulates robot behavior in the segment between point c and d
+SegC-Db:
+	LOAD   FMid        	; Defined below as 350.
+	STORE  DVel        	; Desired forward velocity
+	IN     XPOS        	; X position from odometry
+	OUT    LCD         	; Display X position for debugging
+	;Subtracts Two Meters so the value in the accumulator is a negative value
+	;until the robot has moved Two Meters
+	SUB    TwoMeters    ; Defined below as the robot units for 1 m
+	;junps to the begining of this loop so that the robot will continue to move forward
+	;until it has moved aproximatly one meter
+	JNEG   SegC-Db     	; Not there yet, keep checking
+	LOADI  0		   	; Loads 0
+	STORE  DVel        	; Stops the robot from moving forward
+	OUT    LVELCMD		; extra stop comands to ensure the robot is stationary
+	OUT	   RVELCMD 		; extra stop comands to ensure the robot is stationary
+	LOADI  180			; Loads 180, the angled needed to turn around
+	STORE  DManTheta	; Makes the robot turn the angle specified
+	LOAD   FSlow		; Specifies a slow trun speed
+	STORE  DManTurnVel	; stores the turn speed
+	CALL   TurnVariableSpeed	; Calls the turn API constructed for variable speed turns
+	CALL   Wait1       	; Calls Wait1 to wait 1 second to let the robot turn
+	
+	;area where function calls can be made so the robot does something specific
+	;
+	;area where function calls can be made so the robot does something specific
+	
+;Code which regulates robot behavior in the segment between point d and c
+SegD-Cb:
+	LOAD   FMid        	; Defined below as 350.
+	STORE  DVel        	; Desired forward velocity
+	IN     XPOS        	; X position from odometry
+	OUT    LCD         	; Display X position for debugging
+	;junps to the begining of this loop so that the robot will continue to move forward
+	;until it has moved aproximatly one meter
+	JPOS   SegD-Cb      ; Not there yet, keep checking
+	
+	;area where function calls can be made so the robot does something specific
+	;
+	;area where function calls can be made so the robot does something specific
+	
+;Code which regulates robot behavior in the segment between point c and b	
+SegC-Bb:
+	LOAD   FMid        	; Defined below as 350.
+	STORE  DVel        	; Desired forward velocity
+	IN     XPOS        	; X position from odometry
+	OUT    LCD         	; Display X position for debugging
+	;Adds Two meters so the value in the accumulator is a negative value
+	;until the robot has moved Two Meters
+	ADD    TwoMeters    ; Defined below as the robot units for 1 m
+	;junps to the begining of this loop so that the robot will continue to move forward
+	;until it has moved aproximatly one meter
+	JPOS   SegC-Bb      ; Not there yet, keep checking
+	LOADI  0			; Loads 0
+	STORE  DVel			; Stops the robot from moving forward
+	OUT    LVELCMD		; extra stop comands to ensure the robot is stationary
+	OUT	   RVELCMD 		; extra stop comands to ensure the robot is stationary
+	LOADI  0			; Loads 0, the angled needed to turn around
+	STORE  DManTheta	; Makes the robot turn the angle specified
+	LOAD   FSlow		; Specifies a slow trun speed
+	STORE  DManTurnVel	; stores the turn speed
+	CALL   TurnVariableSpeed	; Calls the turn API constructed for variable speed turns
+	CALL   Wait1		; Calls Wait1 to wait 1 second to let the robot turn
+	
+	;area where function calls can be made so the robot does something specific
+	;
+	;area where function calls can be made so the robot does something specific
+	
+;Code which regulates robot behavior in the segment between point b and c	
+SegB-Cb:
+	LOAD   FMid			; Defined below as 350.
+	STORE  DVel			; Desired forward velocity
+	IN	   XPOS			; X position from odometry
+	OUT    LCD			; Display X position for debugging
+	;junps to the begining of this loop so that the robot will continue to move forward
+	;until it has moved aproximatly one meter
+	JNEG   SegB-Cb		; Not there yet, keep checking
+	JUMP   MiniaturePatrol
+	
+	;area where function calls can be made so the robot does something specific
+	;
+	;area where function calls can be made so the robot does something specific
+	
+	
+;Code which has the robot do along ints permanant patrol path
+IndefinitePatrol:
+	LOADI  0			; Loads 0
+	STORE  DVel 		; Stops the robot from moving forward
+	OUT    LVELCMD		; extra stop comands to ensure the robot is stationary
+	OUT	   RVELCMD 		; extra stop comands to ensure the robot is stationary
+	OUT	   RESETPOS		; resets the odometry at this point to 
+	CALL	Wait1		; Calls Wait1 to wait 1 second to let the robot turn
+	
+	;area where function calls can be made so the robot does something specific
+	;
+	;area where function calls can be made so the robot does something specific
+	
+	
+SegC-D:
+	LOAD   FMid        ; Defined below as 350.
+	STORE  DVel        ; Desired forward velocity
+	IN     XPOS        ; X position from odometry
+	OUT    LCD         ; Display X position for debugging
+	SUB    Fivefeet    ; Defined below as the robot units for 1 m
+	JNEG   SegC-D      ; Not there yet, keep checking
+	LOADI  0		   ; Loads 0
+	STORE  DVel        ; Stops the robot from moving forward
+	OUT    LVELCMD
+	OUT	   RVELCMD 
+	LOADI  -90         ; Loads -90, the angled needed to turn right
+	STORE  DManTheta      ; Makes the robot turn the angle specified
+	LOAD   FSlow
+	STORE  DManTurnVel
+	CALL   TurnVariableSpeed
+	CALL   Wait1       ; Calls Wait1 to wait 1 second to let the robot turn
+SegD-E:
+	LOAD   FMid        ; Defined below as 350.
+	STORE  DVel        ; Desired forward velocity
+	IN     YPOS        ; X position from odometry
+	OUT    LCD         ; Display X position for debugging
+	ADD    FiveFeet    ; Defined below as the robot units for 1 m
+	JPOS   SegD-E      ; Not there yet, keep checking
+	LOADI  0
+	STORE  DVel
+	OUT    LVELCMD
+	OUT	   RVELCMD 
+	LOADI  90
+	STORE  DManTheta      ; Desired angle 180
+	LOAD   FSlow
+	STORE  DManTurnVel
+	CALL   TurnVariableSpeed
+	CALL   Wait1
+SegE-D:
+	LOAD   FMid        ; Defined below as 350.
+	STORE  DVel        ; Desired forward velocity
+	IN     YPOS        ; Y position from odometry
+	OUT    LCD         ; Display Y position for debugging
+	JNEG   SegE-D      ; Not there yet, keep checking
+	LOADI  180         ; Loads -90, the angled needed to turn right
+	STORE  DManTheta      ; Makes the robot turn the angle specified
+	LOAD   FSlow
+	STORE  DManTurnVel
+	CALL   TurnVariableSpeed
+	CALL   Wait1      ; Calls Wait1 to wait 1 second to let the robot turn
+SegD-C:
+	LOAD   FMid        ; Defined below as 350.
+	STORE  DVel        ; Desired forward velocity
+	IN     XPOS        ; X position from odometry
+	OUT    LCD         ; Display X position for debugging
+	JPOS   SegD-C      ; Not there yet, keep checking
+SegC-B:
+	LOAD   FMid        ; Defined below as 350.
+	STORE  DVel        ; Desired forward velocity
+	IN     XPOS        ; X position from odometry
+	OUT    LCD         ; Display X position for debugging
+	ADD    FiveFeet    ; Defined below as the robot units for 1 m
+	JPOS   SegC-B      ; Not there yet, keep checking
+	LOADI  0
+	STORE  DVel
+	OUT    LVELCMD
+	OUT	   RVELCMD 
+	LOADI  270
+	STORE  DManTheta
+	LOAD   FSlow
+	STORE  DManTurnVel
+	CALL   TurnVariableSpeed
+	CALL   Wait1
+SegB-A:
+	LOAD   FMid
+	STORE  DVel
+	IN	   YPOS
+	OUT    LCD
+	ADD	   FiveFeet
+	JPOS   SegB-A
+	LOADI  0
+	STORE  DVel
+	OUT    LVELCMD
+	OUT	   RVELCMD 
+	LOADI  90         ; Loads -90, the angled needed to turn right
+	STORE  DManTheta      ; Makes the robot turn the angle specified
+	LOAD   FSlow
+	STORE  DManTurnVel
+	CALL   TurnVariableSpeed
+	CALL   Wait1      ; Calls Wait1 to wait 1 second to let the robot turn
+SegA-B:
+	LOAD   FMid
+	STORE  DVel
+	IN	   YPOS
+	OUT    LCD
+	JNEG   SegA-B
+	LOADI  0
+	STORE  DVel
+	OUT    LVELCMD
+	OUT	   RVELCMD 
+	LOADI  0
+	STORE  DManTheta
+	LOAD   FSlow
+	STORE  DManTurnVel
+	CALL   TurnVariableSpeed
+	CALL   Wait1
+SegB-C:
+	LOAD   FMid
+	STORE  DVel
+	IN	   XPOS
+	OUT    LCD
+	JNEG   SegB-C	
+	JUMP   IndefinitePatrol
+
+	
+	
+; Week 2 Testing
+; Want to see how bad the odometry error becomes after continuous patrol
+; without resetting it.
+TestOdometryError:
+	Load	Zero
+	OUT     LVELCMD     ; Stop motors
+	OUT     RVELCMD
+	STORE   DVel        ; Reset movement API variables
+	
+	; Move forward at angle 0 and velocity 350
+	STORE   DTheta	    ; Desired angle 0
+	LOAD	FMid		; Defined below as 350
+	STORE	DVel		; Desired forward velocity
+	
+TestOdForward1:
+	IN      XPOS        ; X position from odometry
+	OUT     LCD         ; Display X position for debugging
+	SUB     TwoMeters    ; Defined below as the robot units for 1 m
+	JNEG    TestOdForward1       ; Not there yet, keep checking
+
+	; once you get here, you've travelewd 2m straught forward,
+	; so stop and turn left 180 degrees
+	LOADI   0
+	OUT     LVELCMD     ; Stop motors
+	OUT     RVELCMD
+	STORE   DVel
+	LOADI   90		; this is the desired turn amount
+	STORE   DManTheta
+	LOAD    FSlow	; this is the desired turn speed
+	STORE   DManTurnVel
+	CALL    TurnVariableSpeed
+	LOAD	FMid		; Defined below as 350
+	STORE	DVel		; Desired forward velocity
+
+TestOdForward2:	
+	IN		XPOS
+	OUT		LCD
+	JPOS	TestOdForward2
+	
+	; stop and turn right 180 degrees
+	LOADI   0
+	OUT     LVELCMD     ; Stop motors
+	OUT     RVELCMD
+	STORE   DVel
+	LOADI   -90
+	STORE   DManTheta
+	LOAD    FSlow	; this is the desired turn speed
+	STORE   DManTurnVel
+	CALL	TurnVariableSpeed
+	LOAD	FMid		; Defined below as 350
+	STORE	DVel		; Desired forward velocity
+	
+	JUMP	TestOdometryError ; repeat forever
+
+;************************************************************************************
+; Allows the robot to turn in place at a given speed.
+; Turning at a slow speed results in less slippage and odometry error.
+; 
+; To use, store values for these before calling:
+; 	DManTheta - the desired theta value to be facing when the call is returned
+; 	DManTurnVal - the velocity to turn at; recommend 100 (ie FSlow)
+;*************************************************************************************
+TurnVariableSpeed:
+	LOADI	1			; enable manual turning and disable movement API
+	STORE	ManTurnEn
+	CALL    Wait1Fifth  ; wait and let robot stabilize
+	
+	CALL	DetermineTurnDir  ; if this sets IsTurnLeft = 1, turn left; else turn right
+	LOAD	IsTurnLeft
+	JZERO	TurnRightVarSpeedHelper
+	; otherwise, turn left
+	LOAD	DManTurnVel	; set the velocity for the turn speed
+	OUT		RVELCMD		; just turn right motor forward
+	CALL	Neg			; make left wheel turn opposite velocity
+	OUT		LVELCMD
+LoopTurnLeftVariableSpeed:
+	LOAD	DManTurnVel	; set the velocity for the turn speed
+	OUT		RVELCMD		; just turn right motor forward
+	CALL	Neg			; make left wheel turn opposite velocity
+	OUT		LVELCMD
+	CALL	GetManThetaErr	; get the heading error
+	CALL	Abs
+	OUT		LCD
+	ADDI	-2			; this is desired accuracy
+	JPOS	LoopTurnLeftVariableSpeed ; keep turning until error is <= 2 degrees
+	JUMP	DoneTurnVariableSpeed
+TurnRightVarSpeedHelper:
+	LOAD	DManTurnVel	; set the velocity for the turn speed
+	OUT		LVELCMD		; just turn left motor forward
+	CALL	Neg			; make right wheel turn opposite velocity
+	OUT		RVELCMD
+LoopTurnRightVariableSpeed:
+	LOAD	DManTurnVel	; set the velocity for the turn speed
+	OUT		LVELCMD		; just turn left motor
+	CALL	Neg			; make right wheel turn opposite velocity
+	OUT		RVELCMD
+	CALL	GetManThetaErr	; get the heading error
+	CALL	Abs
+	OUT		LCD
+	ADDI	-2			; this is desired accuracy
+	JPOS	LoopTurnRightVariableSpeed ; keep turning until error is <= 2 degrees
+DoneTurnVariableSpeed:
+	IN		THETA
+	STORE	DTheta	; want the movement API not to try and turn it once control resumes
+	LOADI	0		; after the turn, stop the motors
+	OUT		LVELCMD
+	OUT		RVELCMD
+	LOADI	0		; disable manual turning and re-enable movement API
+	STORE	ManTurnEn
+	CALL	Wait1Fifth
+	RETURN
+DManTheta:	 DW	0		; desired theta; the robot will be facing here +-2 degrees when finished
+DManTurnVel: DW 0		; desired turn speed; 100 is slowest, 500 is fastest; faster speed = more slipping
+ManTurnEn:	 DW &H0000	; set to 1 to enable manual turning and disable movement API
+
+;***************************************************************
+; Determines the direction for the manual turn.
+; If abs(THETA - DManTheta)>=180, then turn right,
+; else turn left.
+;
+; This function doesn't actually turn; it sets an indicator bit
+; IsTurnLeft = 1 means left turn; = 0 means right turn
+;***************************************************************
+DetermineTurnDir:
+	IN		THETA
+	SUB		DManTheta
+	CALL	Abs
+	SUB		Pos180
+	JNEG	SetTurnLeft		; if abs(THETA - DManTheta) >= 180, turn right
+	LOADI	0
+	STORE	IsTurnLeft
+	JUMP	DoneDetermineTurnDir
+SetTurnLeft:
+	LOADI	1
+	STORE	IsTurnLeft
+DoneDetermineTurnDir:	
+	RETURN
+IsTurnLeft:	DW	0
+Pos180:		DW 180
+
+; Returns the current angular error wrapped to +/-180,
+; when using manual control (not using movement API)
+GetManThetaErr:
+	; convenient way to get angle error in +/-180 range is
+	; ((error + 180) % 360 ) - 180
+	IN     THETA
+	SUB    DManTheta    ; actual - desired angle
+	CALL   Neg         ; desired - actual angle
+	ADDI   180
+	CALL   Mod360
+	ADDI   -180
+	RETURN
+
+; Subroutine to wait (block) for 1/5 second
+Wait1Fifth:
+	OUT    TIMER
+WFifthLoop:
+	IN     TIMER
+	OUT    XLEDS       ; User-feedback that a pause is occurring.
+	ADDI   -2          ; 0.2 second at 10Hz.
+	JNEG   WHalfLoop
+	RETURN
+
+
+;************************************************************************
+; Enables sonar, reads the distances directly to the left and right,
+; (sonars 0 and 5), stores these values, then disables sonar
+;************************************************************************
+MeasureLRDistance:
+	LOAD	Mask0		; prep to enable sonars 0 and 5 (90deg left and right)
+	OR		Mask5
+	OUT		SONAREN		; enable sonars 0 and 5
+	CALL	Wait1Half	; give the sonars time to enable and fire
+	
+	IN		Dist0		; get sonar 0's reading and store it
+	STORE	LDist
+	
+	IN		Dist5		; get sonar 0's reading and store it
+	STORE	RDist
+	
+	LOAD	Zero		; disable sonar
+	OUT		SONAREN
+	
+	RETURN
+LDist:		DW 0		; stores the sonar reading from sonar 0
+RDist:		DW 0		; stores the sonar reading from sonar 5
+
+
+;************************************************************************
+; Uses the LDist and RDist values from MeasureLRDistance to determine
+; the amount of correction to apply in order to try to get back on
+; the original patrol path.
+;************************************************************************
+	
+
+TotalHallWidth: DW	1660 ; the distance (in mm) between the top of the baffle and the wall
+RobotWidth:		DW	210	 ; the distance across the robot (in mm) from sonar 0 to sonar 5
+
+
+; Week 1 Exercise demo
+; Want the robot to drive forward until it detects something to its right (sonar 5)
+; within 2 feet of it. Upon detection, stop, turn right 90deg, and emit a beep for
+; 1 second.
+	LOAD	OneSecBeep	; initialize beep for 1/8 seconds at 500Hz
+	OUT		BEEP        ; start beep sound
+	OUT		LCD			; just to test LCD
+	
+	LOAD    Zero
+	OUT     LVELCMD     ; Stop motors
+	OUT     RVELCMD
+	STORE   DVel        ; Reset movement API variables
+	
+						; Move forward at angle 0 and velocity 350
+	STORE   DTheta	    ; Desired angle 0
+	;LOAD	FMid		; Defined below as 350
+	LOAD	Zero		; test
+	STORE	DVel		; Desired forward velocity
+	
+	LOAD	Zero
+	ADDI	&B00100000	; Enable sonar 5
+	OUT		SONAREN
+
+WaitForSonar5Within2Feet:
+	LOAD	Zero
+	ADDI	&H262		; 2 feet in mm in hex
+	SUB		DIST5		; (2ft in mm) - (sonar 5 distance reading)
+	OUT		LCD			; display (2ft - dist)
+	CALL	Wait1
+	;JPOS	Sonar5Within2Feet
+	LOAD	DIST5
+	OUT		LCD
+	JUMP	WaitForSonar5Within2Feet
+	
+Sonar5Within2Feet:
+	LOAD    Zero
+	OUT     LVELCMD     ; Stop motors
+	OUT     RVELCMD
+	STORE   DVel        ; Reset movement API variables
+	STORE   DTheta
+	
+	LOAD	OneSecBeep	; Beep for 1 seconds at 500Hz
+	OUT		BEEP        ; Perform beep sound
+	
+	; turn right 90 degrees
+	LOADI  0
+	STORE  DVel
+	ADDI   -90
+	STORE  DTheta
+	CALL	WAIT1
+
+	JUMP 	Die
 	
 
 ; As a quick demo of the movement control, the robot is 
@@ -91,38 +806,6 @@ Main:
 	; The robot should automatically start moving,
 	; trying to match these desired parameters, because
 	; the movement API is active.
-
-; Funtion to turn on the right sonar
-OnSonar:
-	LOADI  &B00100000  ; Loading the bit for the right sonar
-	OUT  SONAREN	   ; Turning on that sonar
-
-; This function detects when the right sonar measures a distance
-; less than two feet
-Detect: 
-	LOADI  0
-	STORE  DTheta      ; Desired angle 0
-	LOAD   FMid        ; Defined below as 350.
-	STORE  DVel        ; Desired forward velocity
-	IN DIST5		   ; Reads in the sonar value
-	OUT LCD            ; Outsputs the value to lcd to read
-	SUB TwoFeet        ; Subtracts 2 feet to make desired value 0
-	JPOS Detect        ; If value is positive, go back to detect.
-
-; Function to turn right, deep and die
-StopSequence:
-	LOADI  0		   ; Loads 0
-	STORE  DVel        ; Stops the robot from moving forward
-	LOADI  -90         ; Loads -90, the angled needed to turn right
-	STORE  DTheta      ; Makes the robot turn the angle specified
-	LOADI &H40         ; Loads the frequency wanted for the beep
-	OUT BEEP           ; Makes the robot beep at that frequency
-	CALL	Wait1      ; Calls Wait1 to wait 1 second to let the robot beep
-	LOADI  &H0         ; Loads 0
-	OUT	   BEEP        ; Outputs 0 to beep to turn it off
-	JUMP DIE           ; Jumps to die to turn off the robot
-
-	
 	
 Test1:  ; P.S. "Test1" is a terrible, non-descriptive label
 	IN     XPOS        ; X position from odometry
@@ -165,10 +848,12 @@ GoTo00: ; slightly better label than "test"
 ; the angle needed to reach (0,0).  The origin is a degenerative
 ; case, but you can use a little more math to use ATAN2 to point to
 ; any coordinate.
+; formula: AtanX = desired x - current x
+;		   AtanY = desired y - current y
 	IN     XPOS        ; get the X position from odometry
 	CALL   Neg         ; negate
 	STORE  AtanX
-	IN     YPOS        ; get the X position from odometry
+	IN     YPOS        ; get the Y position from odometry
 	CALL   Neg         ; negate
 	STORE  AtanY
 	CALL   Atan2       ; Gets the angle from (0,0) to (AtanX,AtanY)
@@ -196,7 +881,6 @@ GoTo00: ; slightly better label than "test"
 
 
 
-	
 Die:
 ; Sometimes it's useful to permanently stop execution.
 ; This will also catch the execution if it accidentally
@@ -216,7 +900,22 @@ Forever:
 ; Timer ISR.  Currently just calls the movement control code.
 ; You could, however, do additional tasks here if desired.
 CTimer_ISR:
+	LOAD	ManTurnEn	; if ManTurnEn is set, skip the movement API code
+	JPOS	SkipMovementAPI
 	CALL   ControlMovement
+	JUMP	CTimer_ISRDone
+SkipMovementAPI:
+	;LOAD	DTheta
+	;STORE	PrevDTheta
+	;LOAD	DVel
+	;STORE	PrevDVel
+	;LOADI	0
+	;STORE	DVel
+	;STORE 	DTheta
+	LOADI	0
+	OUT    LVELCMD
+	OUT    RVELCMD
+CTimer_ISRDone:
 	RETI   ; return from ISR
 	
 	
@@ -297,7 +996,7 @@ GetThetaErr:
 	CALL   Mod360
 	ADDI   -180
 	RETURN
-
+	
 ; caps a value to +/-MaxVal
 CapValue:
 	SUB     MaxVal
@@ -692,6 +1391,17 @@ Wloop:
 	JNEG   Wloop
 	RETURN
 
+
+; Subroutine to wait (block) for 1/2 second
+Wait1Half:
+	OUT    TIMER
+WHalfLoop:
+	IN     TIMER
+	OUT    XLEDS       ; User-feedback that a pause is occurring.
+	ADDI   -5          ; 1/2 second at 10Hz.
+	JNEG   WHalfLoop
+	RETURN
+
 ; This subroutine will get the battery voltage,
 ; and stop program execution if it is too low.
 ; SetupI2C must be executed prior to this.
@@ -802,8 +1512,12 @@ LowByte:  DW &HFF      ; binary 00000000 1111111
 LowNibl:  DW &HF       ; 0000 0000 0000 1111
 
 ; some useful movement values
+DistanceA: DW 2133
 OneMeter: DW 961       ; ~1m in 1.04mm units
+TwoMeters: DW 1922	   ; ~2m in 1.04mm units
 HalfMeter: DW 481      ; ~0.5m in 1.04mm units
+FiveFeet: DW 1465
+FourFeet: DW 1172
 TwoFeet:  DW 586       ; ~2ft in 1.04mm units
 OneFoot:  DW 293       ; ~2ft in 1.04mm units
 Deg90:    DW 90        ; 90 degrees in odometer units
@@ -821,6 +1535,8 @@ MinBatt:  DW 140       ; 14.0V - minimum safe battery voltage
 I2CWCmd:  DW &H1190    ; write one i2c byte, read one byte, addr 0x90
 I2CRCmd:  DW &H0190    ; write nothing, read one byte, addr 0x90
 
+; values we've added ourself
+OneSecBeep:	DW &H0820	; 1 second at 500Hz
 
 ;***************************************************************
 ;* IO address space map
@@ -866,3 +1582,33 @@ RIN:      EQU &HC8
 LIN:      EQU &HC9
 IR_HI:    EQU &HD0  ; read the high word of the IR receiver (OUT will clear both words)
 IR_LO:    EQU &HD1  ; read the low word of the IR receiver (OUT will clear both words)
+
+;variables to store sonar sweep at point A known values - TYLER
+;this is essentially an array that can be accessed through its base address which is ASAdd
+;this will help to shorten code above
+
+;SweepVar: DW 12     ;variable to use when trying to rotate in sweep
+
+ASAdd:    EQU Astore0 ;address of the first element in Asweep values(basically a poointer)
+
+Astore0:  DW  0 	;sensor reading from sensor 1
+Astore1:  DW  0 	;sensor reading from sensor 2
+Astore2:  DW  0	    ;sensor reading from sensor 3
+Astore3:  DW  0	    ;sensro reading from sensor 4
+
+
+
+;variables to store sonar sweep at point B known values - TYLER
+;this is essentially an array that can be accessed through its base address which is BSAdd
+;this will help to shorten code above
+
+;SweepVar: DW 12     ;variable to use when trying to rotate in sweep
+
+BSAdd:    EQU Bstore0 ;address of the first element in Asweep values(basically a poointer)
+
+Bstore0:  DW  0 	;sensor reading from sensor 1
+Bstore1:  DW  0 	;sensor reading from sensor 2
+Bstore2:  DW  0	    ;sensor reading from sensor 3
+Bstore3:  DW  0	    ;sensro reading from sensor 4
+
+
